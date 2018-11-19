@@ -30,7 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
   const registerDefinitionProvider = vscode.languages.registerDefinitionProvider(selector, definitionProvider);
   context.subscriptions.push(registerDefinitionProvider);
 
-  context.subscriptions.push(vscode.languages.registerCompletionItemProvider(selector, new BrightscriptCompletionItemProvider()));
+  // context.subscriptions.push(vscode.languages.registerCompletionItemProvider(selector, new BrightscriptCompletionItemProvider()));
   context.subscriptions.push(vscode.languages.registerDefinitionProvider(selector, new BrightscriptDefinitionProvider(provider)));
   context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider(selector, new BrightscriptDocumentSymbolProvider()));
   context.subscriptions.push(vscode.languages.registerWorkspaceSymbolProvider(new BrightscriptWorkspaceSymbolProvider(provider)));
