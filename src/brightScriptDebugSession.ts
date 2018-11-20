@@ -10,6 +10,16 @@ import { RokuAdapter, EvaluateContainer } from './RokuAdapter';
 import * as findInFiles from 'find-in-files';
 import * as glob from 'glob';
 
+class CompileFailureEvent implements DebugProtocol.Event {
+    constructor(compileError: any) {
+        this.body = compileError;
+    }
+    body: any;
+    event: string;
+    seq: number;
+    type: string;
+}
+
 export class BrightScriptDebugSession extends DebugSession {
 	public constructor() {
 		super();
@@ -54,7 +64,6 @@ export class BrightScriptDebugSession extends DebugSession {
 		// we request them early by sending an 'initializeRequest' to the frontend.
 		// The frontend will end the configuration sequence by calling 'configurationDone' request.
 		this.sendEvent(new InitializedEvent());
-
 		response.body = response.body || {};
 
 		// This debug adapter implements the configurationDoneRequest.
@@ -127,7 +136,9 @@ export class BrightScriptDebugSession extends DebugSession {
 			disconnect = this.rokuAdapter.on('compile-errors', (compileErrors) => {
 				//for now, just alert the first error found
 				let compileError = compileErrors[0];
-				let clientPath = this.convertDebuggerPathToClient(compileError.path);
+        
+        let clientPath = this.convertDebuggerPathToClient(compileError.path);
+        this.sendEvent(new CompileFailureEvent(compileErrors));
 				let clientLine = this.convertDebuggerLineToClientLine(compileError.path, compileError.lineNumber);
 				error = new Error(`Compile error: ${clientPath}: ${clientLine}`);
 			});

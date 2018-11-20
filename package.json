@@ -276,6 +276,11 @@
                 "command": "extension.brightscript.toggleXML",
                 "title": "Toggle xml/brs",
                 "category": "Brightscript"
+            },
+            {
+                "command": "extension.brightscript.showErrors",
+                "title": "showErrors",
+                "category": "Brightscript"
             }
         ]
     },

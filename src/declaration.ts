@@ -49,7 +49,7 @@ export function readDeclarations(input: string): Declaration[] {
   let currentFunction: Declaration;
   let funcEndLine: number;
   let funcEndChar: number;
-  let mDefs = {}
+  let mDefs = {};
   console.log("READ DECLARATIONS");
   for (const [line, text] of iterlines(input)) {
     // console.log("" + line + ": " + text);
@@ -92,7 +92,7 @@ export function readDeclarations(input: string): Declaration[] {
     if (match !== null) {
       // console.log("FOUND VAR " + match);
       const name = match[1].trim();
-      if (mDefs[name] != true) {
+      if (mDefs[name] !== true) {
         mDefs[name] = true;
         let varSymbol = new Declaration(
           name,

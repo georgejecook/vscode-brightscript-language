@@ -221,7 +221,7 @@ export class RokuAdapter {
         //if there is a line with a compiler error in it, emit an event
         let match;
         let regexp = /compile error.* in (.*)\((\d+)\)/gi;
-        let errors: { path: string; lineNumber: number }[] = [];
+        let errors: { path: string; lineNumber: number, errorText: string }[] = [];
 
         while (match = regexp.exec(responseText)) {
             let path = match[1];
@@ -230,9 +230,11 @@ export class RokuAdapter {
             if (path.toLowerCase().indexOf('$livecompile') > -1) {
                 errors = [];
             } else {
+                const errorText ="Compilation ERROR TODO";
                 errors.push({
                     path,
-                    lineNumber
+                    lineNumber,
+                    errorText
                 });
             }
         }

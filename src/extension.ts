@@ -16,6 +16,8 @@ import { DefinitionRepository } from "./definitionProvider";
 import { DeclarationProvider } from "./declaration";
 import { readSymbolInformations, SymbolInformationRepository } from "./symbol";
 import { registerCommands } from './commands';
+import URI from "vscode-uri";
+const collection = vscode.languages.createDiagnosticCollection('Brightscript');
 
 export function activate(context: vscode.ExtensionContext) {
   //register the code formatter
@@ -36,6 +38,39 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(vscode.languages.registerWorkspaceSymbolProvider(new BrightscriptWorkspaceSymbolProvider(provider)));
   context.subscriptions.push(provider);
 
+  
+
+  vscode.debug.onDidReceiveDebugSessionCustomEvent(e => {
+    console.log("received event " + e);
+    collection.clear();
+
+    e.body.forEach(compileError => {
+      const path : string = compileError.path;
+      const message : string = compileError.errorText;
+      const source : string = compileError.errorText; //TODO
+      const lineNumber : number = compileError.lineNumber;
+      const charStart : number = 0; //TODO
+      const charEnd : number = 10; //TODO
+      
+      //TODO get the actual folder
+      const realPath = path.replace("pkg:/", vscode.workspace.rootPath + "/" + "src/"); //TODO - get correct rootpath for "src/" as per the runconfig
+      const documentUri = URI.file(realPath);
+      console.log("documentUri " + documentUri);
+      
+      //debug crap - for some reason - using this URI works - using the one from the path does not :()
+      const document = vscode.window.activeTextEditor.document;
+      const currentDocumentUri = document.uri;
+      console.log("currentDocumentUri " + currentDocumentUri);
+      
+      collection.set(currentDocumentUri, [{
+        code: '',
+        message: message,
+        range: new vscode.Range(new vscode.Position(compileError.lineNumber, charStart), new vscode.Position(compileError.lineNumber, charEnd)),
+        severity: vscode.DiagnosticSeverity.Error,
+        source: source
+      }]);
+    });
+  });
   registerCommands(context);
 }
 
