@@ -116,6 +116,9 @@
         "breakpoints": [
             {
                 "language": "brightscript"
+            },
+            {
+                "language": "brighterscript"
             }
         ],
         "debuggers": [
