@@ -240,8 +240,9 @@ export class LogOutputManager {
             this.displayedLogLines.push(logLine);
             let match = this.pkgRegex.exec(logLine.text);
             if (match) {
-                const pkgPath = match[1];
+                let pkgPath = match[1];
                 const lineNumber = Number(match[2]);
+                pkgPath = this.docLinkProvider.getLikelyPkgPath(pkgPath);
                 const filename = this.getFilename(pkgPath);
                 const extension = pkgPath.substring(pkgPath.length - 4);
                 let customText = this.getCustomLogText(pkgPath, filename, extension, Number(lineNumber), logLineNumber);
@@ -298,7 +299,7 @@ export class LogOutputManager {
     public getMethodName(pkgPath: string, lineNumber: number): string | null {
         //FIXME this should check all paths in sourceDirs AND against bs and brs files
         let fsPath = this.docLinkProvider.convertPkgPathToFsPath(pkgPath);
-        const method = this.declarationProvider.getFunctionBeforeLine(fsPath, lineNumber);
+        const method = fsPath ? this.declarationProvider.getFunctionBeforeLine(fsPath, lineNumber) : null;
         return method ? method.name : null;
     }
 
