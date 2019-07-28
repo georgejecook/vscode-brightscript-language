@@ -5,6 +5,7 @@ import * as vscode from 'vscode';
 export var __request: any = request;
 
 import BrightScriptFileUtils from './BrightScriptFileUtils';
+import { BrightScriptDebugConfiguration } from './DebugConfigurationProvider';
 
 // georgejecook: I can't find a way to stub/mock a TypeScript class constructor
 // so I have to do this for the time being. Not ideal.
@@ -21,7 +22,16 @@ export default class BrightScriptCommands {
     private fileUtils: BrightScriptFileUtils;
     private context: vscode.ExtensionContext;
     private host: string;
+    private rootDir: string;
+    private debugRootDir: string;
     public function;
+    private launchConfig: BrightScriptDebugConfiguration;
+
+    public setLaunchConfig(launchConfig: BrightScriptDebugConfiguration) {
+        this.launchConfig = launchConfig;
+        this.rootDir = launchConfig.rootDir.replace('${workspaceFolder}', vscode.workspace.workspaceFolders[0].uri.fsPath);
+        this.debugRootDir = launchConfig.debugRootDir.replace('${workspaceFolder}', vscode.workspace.workspaceFolders[0].uri.fsPath);
+    }
 
     public registerCommands(context: vscode.ExtensionContext) {
         this.context = context;
@@ -29,6 +39,9 @@ export default class BrightScriptCommands {
 
         subscriptions.push(vscode.commands.registerCommand('extension.brightscript.toggleXML', () => {
             this.onToggleXml();
+        }));
+        subscriptions.push(vscode.commands.registerCommand('extension.brightscript.toggleBuiltFile', () => {
+            this.onToggleBuiltFile();
         }));
         subscriptions.push(vscode.commands.registerCommand('extension.brightscript.sendRemoteCommand', (key: string) => {
             this.sendRemoteCommand(key);
@@ -86,15 +99,32 @@ export default class BrightScriptCommands {
         }));
     }
 
-    public async openFile(filename: string): Promise<boolean> {
+    public async openFile(filename: string, range: vscode.Range = null, preview: boolean = false): Promise<boolean> {
         let uri = vscode.Uri.file(filename);
         try {
             let doc = await vscode.workspace.openTextDocument(uri); // calls back into the provider
-            await vscode.window.showTextDocument(doc, { preview: false });
+            await vscode.window.showTextDocument(doc, { preview: preview });
+            if (range) {
+                this.gotoRange(range);
+            }
         } catch (e) {
             return false;
         }
         return true;
+    }
+
+    private gotoRange(range: vscode.Range) {
+        let editor = vscode.window.activeTextEditor;
+        editor.selection = new vscode.Selection(
+            range.start.line,
+            range.start.character,
+            range.start.line,
+            range.start.character
+        );
+        vscode.commands.executeCommand('revealLine', {
+            lineNumber: range.start.line,
+            at: 'center'
+        });
     }
 
     public async onToggleXml() {
@@ -105,6 +135,28 @@ export default class BrightScriptCommands {
                 if (! await this.openFile(alternateFileName)
                     && alternateFileName.toLowerCase().endsWith('.brs')) {
                     await this.openFile(this.fileUtils.getBsFileName(alternateFileName));
+                }
+            }
+        }
+    }
+
+    public async onToggleBuiltFile() {
+        if (vscode.window.activeTextEditor) {
+            const currentDocument = vscode.window.activeTextEditor.document;
+            //TODO ascertain paths
+            let nextPath = null;
+            let fsPath = this.fileUtils.getBrsFileName(currentDocument.uri.fsPath) || currentDocument.uri.fsPath;
+
+            if (fsPath.startsWith(this.debugRootDir)) {
+                //TODO - work out how to get the common path to root + source folders
+                nextPath = fsPath.replace(this.debugRootDir, this.rootDir);
+            } else {
+                //TODO - work out how to get the common path to root + source folders
+                nextPath = fsPath.replace(this.rootDir, this.debugRootDir);
+            }
+            if (nextPath) {
+                if (!await this.openFile(nextPath, vscode.window.activeTextEditor.selection)) {
+                    this.openFile(this.fileUtils.getBsFileName(nextPath), vscode.window.activeTextEditor.selection);
                 }
             }
         }

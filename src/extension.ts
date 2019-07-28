@@ -36,7 +36,7 @@ import {
 
 let outputChannel: vscode.OutputChannel;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     let activeDeviceManager = new ActiveDeviceManager();
 
     //register the code formatter
@@ -63,8 +63,10 @@ export function activate(context: vscode.ExtensionContext) {
         if (e.event === 'BSLaunchStartEvent') {
             docLinkProvider.setLaunchConfig(e.body);
             logOutputManager.setLaunchConfig(e.body);
+            brightScriptCommands.setLaunchConfig(e.body);
         }
     });
+
     //register the definition provider
     const declarationProvider: DeclarationProvider = new DeclarationProvider();
     const symbolInformationRepository = new SymbolInformationRepository(declarationProvider);
@@ -91,6 +93,16 @@ export function activate(context: vscode.ExtensionContext) {
         logOutputManager.onDidReceiveDebugSessionCustomEvent(e);
     });
 
+    //some of the services/subcriptions require the launchconfig to work
+    const launchConfig = vscode.workspace.getConfiguration('launch');
+    const configurations = launchConfig.configurations;
+    let defaultLaunchConfig: any = configurations.find( (c) => true);
+    if (defaultLaunchConfig) {
+        docLinkProvider.setLaunchConfig(defaultLaunchConfig);
+        logOutputManager.setLaunchConfig(defaultLaunchConfig);
+        brightScriptCommands.setLaunchConfig(defaultLaunchConfig);
+
+    }
     outputChannel.show();
 
     //xml support
