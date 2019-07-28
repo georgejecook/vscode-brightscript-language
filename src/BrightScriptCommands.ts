@@ -29,10 +29,10 @@ export default class BrightScriptCommands {
 
         subscriptions.push(vscode.commands.registerCommand('extension.brightscript.toggleXML', () => {
             this.onToggleXml();
-        } ));
+        }));
         subscriptions.push(vscode.commands.registerCommand('extension.brightscript.sendRemoteCommand', (key: string) => {
             this.sendRemoteCommand(key);
-        } ));
+        }));
 
         subscriptions.push(vscode.commands.registerCommand('extension.brightscript.sendRemoteText', async () => {
             let stuffUserTyped: string = await vscode.window.showInputBox({
@@ -46,7 +46,7 @@ export default class BrightScriptCommands {
                 }
             }
             vscode.commands.executeCommand('workbench.action.focusPanel');
-        } ));
+        }));
 
         subscriptions.push(vscode.commands.registerCommand('extension.brightscript.pressBackButton', () => {
             this.sendRemoteCommand('Back');
@@ -86,10 +86,15 @@ export default class BrightScriptCommands {
         }));
     }
 
-    public async openFile(filename: string) {
+    public async openFile(filename: string): Promise<boolean> {
         let uri = vscode.Uri.file(filename);
-        let doc = await vscode.workspace.openTextDocument(uri); // calls back into the provider
-        await vscode.window.showTextDocument(doc, { preview: false });
+        try {
+            let doc = await vscode.workspace.openTextDocument(uri); // calls back into the provider
+            await vscode.window.showTextDocument(doc, { preview: false });
+        } catch (e) {
+            return false;
+        }
+        return true;
     }
 
     public async onToggleXml() {
@@ -97,7 +102,10 @@ export default class BrightScriptCommands {
             const currentDocument = vscode.window.activeTextEditor.document;
             let alternateFileName = this.fileUtils.getAlternateFileName(currentDocument.fileName);
             if (alternateFileName) {
-                this.openFile(alternateFileName);
+                if (! await this.openFile(alternateFileName)
+                    && alternateFileName.toLowerCase().endsWith('.brs')) {
+                    await this.openFile(this.fileUtils.getBsFileName(alternateFileName));
+                }
             }
         }
     }
