@@ -36,7 +36,7 @@ import {
 
 let outputChannel: vscode.OutputChannel;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     let activeDeviceManager = new ActiveDeviceManager();
 
     //register the code formatter
@@ -44,10 +44,16 @@ export function activate(context: vscode.ExtensionContext) {
         language: 'brightscript',
         scheme: 'file'
     }, new Formatter());
+
+    vscode.languages.registerDocumentRangeFormattingEditProvider({
+        language: 'brighterscript',
+        scheme: 'file'
+    }, new Formatter());
     outputChannel = vscode.window.createOutputChannel('BrightScript Log');
 
     let configProvider = new BrsDebugConfigurationProvider(context, activeDeviceManager);
     context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('brightscript', configProvider));
+    context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('brighterscript', configProvider));
 
     let docLinkProvider = new LogDocumentLinkProvider();
     //register a link provider for this extension's "BrightScript Log" output
@@ -57,15 +63,17 @@ export function activate(context: vscode.ExtensionContext) {
         if (e.event === 'BSLaunchStartEvent') {
             docLinkProvider.setLaunchConfig(e.body);
             logOutputManager.setLaunchConfig(e.body);
+            brightScriptCommands.setLaunchConfig(e.body);
         }
     });
+
     //register the definition provider
     const declarationProvider: DeclarationProvider = new DeclarationProvider();
     const symbolInformationRepository = new SymbolInformationRepository(declarationProvider);
     const logOutputManager: LogOutputManager = new LogOutputManager(outputChannel, context, docLinkProvider, declarationProvider);
     const definitionRepo = new DefinitionRepository(declarationProvider);
     const definitionProvider = new BrightScriptDefinitionProvider(definitionRepo);
-    const selector = { scheme: 'file', pattern: '**/*.{brs}' };
+    const selector = { scheme: 'file', pattern: '**/*.{brs,bs}' };
     const brightScriptCommands = getBrightScriptCommandsInstance();
     brightScriptCommands.registerCommands(context);
 
@@ -85,6 +93,16 @@ export function activate(context: vscode.ExtensionContext) {
         logOutputManager.onDidReceiveDebugSessionCustomEvent(e);
     });
 
+    //some of the services/subcriptions require the launchconfig to work
+    const launchConfig = vscode.workspace.getConfiguration('launch');
+    const configurations = launchConfig.configurations;
+    let defaultLaunchConfig: any = configurations.find( (c) => true);
+    if (defaultLaunchConfig) {
+        docLinkProvider.setLaunchConfig(defaultLaunchConfig);
+        logOutputManager.setLaunchConfig(defaultLaunchConfig);
+        brightScriptCommands.setLaunchConfig(defaultLaunchConfig);
+
+    }
     outputChannel.show();
 
     //xml support

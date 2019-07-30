@@ -348,7 +348,7 @@ export class BrightScriptDebugSession extends DebugSession {
                     if (parsedPath.ext) {
                         let originalRelativePath = relativePath;
 
-                        if (parsedPath.ext === '.brs') {
+                        if (parsedPath.ext === '.brs' || parsedPath.ext === '.bs') {
                             // Create the new file name to be used
                             let newFileName: string = `${parsedPath.name}${this.componentLibraryPostfix}${libraryNumber}${parsedPath.ext}`;
                             relativePath = path.join(parsedPath.dir, newFileName);
@@ -357,7 +357,8 @@ export class BrightScriptDebugSession extends DebugSession {
                             replaceInFile.sync({
                                 files: [
                                     path.join(stagingFolder, '**/*.xml'),
-                                    path.join(stagingFolder, '**/*.brs')
+                                    path.join(stagingFolder, '**/*.brs'),
+                                    path.join(stagingFolder, '**/*.bs')
                                 ],
                                 from: (file) => new RegExp(parsedPath.base, 'gi'),
                                 to: newFileName
@@ -444,16 +445,14 @@ export class BrightScriptDebugSession extends DebugSession {
             let lastWorkingPath = '';
             for (const sourceDir of this.launchArgs.sourceDirs) {
                 clientPath = clientPath.replace(this.launchArgs.rootDir, sourceDir);
-                if (fsExtra.pathExistsSync(clientPath)) {
-                    lastWorkingPath = clientPath;
-                }
+                lastWorkingPath = this.getBsCompatibleSourcePath(clientPath);
             }
             clientPath = lastWorkingPath;
         }
         let extension = path.extname(clientPath).toLowerCase();
 
-        //only accept breakpoints from brightscript files
-        if (extension === '.brs') {
+        //only accept breakpoints from brightscript or brighterscript files
+        if (extension === '.brs' || extension === '.bs') {
             if (!this.launchRequestWasCalled) {
                 //store the breakpoints indexed by clientPath
                 this.breakpointsByClientPath[clientPath] = args.breakpoints;
@@ -779,11 +778,21 @@ export class BrightScriptDebugSession extends DebugSession {
         let lastExistingPath = '';
         for (const sourceDir of rootDir) {
             let clientPath = path.normalize(path.join(sourceDir, debuggerPath));
-            if (fsExtra.pathExistsSync(clientPath)) {
-                lastExistingPath = clientPath;
-            }
+            lastExistingPath = this.getBsCompatibleSourcePath(clientPath);
         }
         return lastExistingPath;
+    }
+    private getBsCompatibleSourcePath(clientPath: string): string {
+        if (fsExtra.pathExistsSync(clientPath)) {
+            return clientPath;
+        } else if (clientPath.toLowerCase().endsWith('.brs')) {
+            let bsClientPath = clientPath.substring(0, clientPath.length - 3) + 'bs';
+            if (fsExtra.pathExistsSync(bsClientPath)) {
+                return bsClientPath;
+            }
+        } else {
+            return '';
+        }
     }
 
     private removeFileTruncation(filePath) {
@@ -868,6 +877,9 @@ export class BrightScriptDebugSession extends DebugSession {
             if (pathIncludesCaseInsensitive(clientPath, basePath)) {
                 let relativeClientPath = replaceCaseInsensitive(clientPath.toString(), basePath, '');
                 stagingFilePath = path.join(stagingPath, relativeClientPath);
+                if (stagingFilePath.toLowerCase().endsWith('.bs')) {
+                    stagingFilePath = stagingFilePath.substring(0, stagingFilePath.length - 2) + 'brs';
+                }
                 //load the file as a string
                 let fileContents = (await fsExtra.readFile(stagingFilePath)).toString();
                 //split the file by newline
@@ -951,12 +963,12 @@ export class BrightScriptDebugSession extends DebugSession {
     public async findEntryPoint(projectPath: string) {
         let results = Object.assign(
             {},
-            await findInFiles.find({ term: 'sub\\s+RunUserInterface\\s*\\(', flags: 'ig' }, projectPath, /.*\.brs/),
-            await findInFiles.find({ term: 'function\\s+RunUserInterface\\s*\\(', flags: 'ig' }, projectPath, /.*\.brs/),
-            await findInFiles.find({ term: 'sub\\s+main\\s*\\(', flags: 'ig' }, projectPath, /.*\.brs/),
-            await findInFiles.find({ term: 'function\\s+main\\s*\\(', flags: 'ig' }, projectPath, /.*\.brs/),
-            await findInFiles.find({ term: 'sub\\s+RunScreenSaver\\s*\\(', flags: 'ig' }, projectPath, /.*\.brs/),
-            await findInFiles.find({ term: 'function\\s+RunScreenSaver\\s*\\(', flags: 'ig' }, projectPath, /.*\.brs/)
+            await findInFiles.find({ term: 'sub\\s+RunUserInterface\\s*\\(', flags: 'ig' }, projectPath, /.*\.(brs|bs)/),
+            await findInFiles.find({ term: 'function\\s+RunUserInterface\\s*\\(', flags: 'ig' }, projectPath, /.*\.(brs|bs)/),
+            await findInFiles.find({ term: 'sub\\s+main\\s*\\(', flags: 'ig' }, projectPath, /.*\.(brs|bs)/),
+            await findInFiles.find({ term: 'function\\s+main\\s*\\(', flags: 'ig' }, projectPath, /.*\.(brs|bs)/),
+            await findInFiles.find({ term: 'sub\\s+RunScreenSaver\\s*\\(', flags: 'ig' }, projectPath, /.*\.(brs|bs)/),
+            await findInFiles.find({ term: 'function\\s+RunScreenSaver\\s*\\(', flags: 'ig' }, projectPath, /.*\.(brs|bs)/)
         );
         let keys = Object.keys(results);
         if (keys.length === 0) {

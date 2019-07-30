@@ -3,7 +3,10 @@ import * as rokuDeploy from 'roku-deploy';
 import { DocumentLink, Position, Range } from 'vscode';
 import * as vscode from 'vscode';
 
+import BrightScriptFileUtils from './BrightScriptFileUtils';
 import { BrightScriptDebugConfiguration } from './DebugConfigurationProvider';
+
+const fileUtils = new BrightScriptFileUtils();
 
 export class CustomDocumentLink {
     constructor(outputLine: number, startChar: number, length: number, pkgPath: string, lineNumber: number, filename: string) {
@@ -97,15 +100,28 @@ export class LogDocumentLinkProvider implements vscode.DocumentLinkProvider {
         this.customLinks = [];
     }
 
-    public convertPkgPathToFsPath(pkgPath: string) {
+    public convertPkgPathToFsPath(pkgPath: string): string | null {
         //remove preceeding pkg:
         if (pkgPath.toLowerCase().indexOf('pkg:') === 0) {
             pkgPath = pkgPath.substring(4);
         }
-        //use debugRootDir if provided, or rootDir if not provided.
-        let rootDir = this.launchConfig.debugRootDir ? this.launchConfig.debugRootDir : this.launchConfig.rootDir;
+        let file = this.getFileMap(pkgPath);
 
-        let clientPath = path.normalize(path.join(rootDir, pkgPath));
-        return clientPath;
+        if (file) {
+            return file.src;
+        }
+        return null;
     }
+
+    public getLikelyPkgPath(pkgPath: string): string | null {
+        if (!this.getFileMap(pkgPath) && pkgPath.toLowerCase().endsWith('.brs')) {
+            let bsPkgPath = fileUtils.getBsFileName(pkgPath);
+            if (this.getFileMap(bsPkgPath)) {
+                return bsPkgPath;
+            }
+        }
+
+        return pkgPath;
+    }
+
 }

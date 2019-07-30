@@ -240,11 +240,13 @@ export class LogOutputManager {
             this.displayedLogLines.push(logLine);
             let match = this.pkgRegex.exec(logLine.text);
             if (match) {
-                const pkgPath = match[1];
+                let pkgPath = match[1];
                 const lineNumber = Number(match[2]);
+                pkgPath = this.docLinkProvider.getLikelyPkgPath(pkgPath);
                 const filename = this.getFilename(pkgPath);
                 const extension = pkgPath.substring(pkgPath.length - 4);
                 let customText = this.getCustomLogText(pkgPath, filename, extension, Number(lineNumber), logLineNumber);
+                //TODO match the pkgPath against srcDirs and brighterscript files
                 const customLink = new CustomDocumentLink(logLineNumber, match.index, customText.length, pkgPath, lineNumber, filename);
                 console.debug(`adding custom link ${customLink}`);
                 this.docLinkProvider.addCustomLink(customLink);
@@ -261,6 +263,8 @@ export class LogOutputManager {
         let name = parts.length > 0 ? parts[parts.length - 1] : pkgPath;
         if (name.toLowerCase().endsWith('.xml') || name.toLowerCase().endsWith('.brs')) {
             name = name.substring(0, name.length - 4);
+        } else if (name.toLowerCase().endsWith('.xml')) {
+            name = name.substring(0, name.length - 3);
         }
         return name;
     }
@@ -280,7 +284,7 @@ export class LogOutputManager {
                 return `${filename}${extension}(${lineNumber})`;
                 break;
             default:
-                const isBrs = extension.toLowerCase() === '.brs';
+                const isBrs = extension.toLowerCase() === '.brs' || extension.toLowerCase() === '.bs';
                 if (isBrs) {
                     const methodName = this.getMethodName(pkgPath, lineNumber);
                     if (methodName) {
@@ -293,8 +297,9 @@ export class LogOutputManager {
     }
 
     public getMethodName(pkgPath: string, lineNumber: number): string | null {
+        //FIXME this should check all paths in sourceDirs AND against bs and brs files
         let fsPath = this.docLinkProvider.convertPkgPathToFsPath(pkgPath);
-        const method = this.declarationProvider.getFunctionBeforeLine(fsPath, lineNumber);
+        const method = fsPath ? this.declarationProvider.getFunctionBeforeLine(fsPath, lineNumber) : null;
         return method ? method.name : null;
     }
 

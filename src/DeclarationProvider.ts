@@ -73,7 +73,7 @@ export class DeclarationProvider implements Disposable {
     constructor() {
         const subscriptions: Disposable[] = [];
 
-        const watcher = vscode.workspace.createFileSystemWatcher('**/*.brs');
+        const watcher = vscode.workspace.createFileSystemWatcher('**/*.{brs,bs}');
         watcher.onDidCreate(this.onDidChangeFile, this);
         watcher.onDidChange(this.onDidChangeFile, this);
         watcher.onDidDelete(this.onDidDeleteFile, this);
@@ -149,7 +149,7 @@ export class DeclarationProvider implements Disposable {
         if (this.fullscan) {
             this.fullscan = false;
 
-            for (const uri of await vscode.workspace.findFiles('**/*.brs', excludes)) {
+            for (const uri of await vscode.workspace.findFiles('**/*.{brs,bs}', excludes)) {
                 this.dirty.set(uri.fsPath, uri);
             }
         }
@@ -197,7 +197,7 @@ export class DeclarationProvider implements Disposable {
             funcEndChar = text.length;
 
             //FUNCTION START
-            let match = /^\s*(?:function|sub)\s+(.*[^\(])\s*\((.*)\)/i.exec(text);
+            let match = /^\s*(?:public|private)*\s*(?:function|sub)\s+(.*[^\(])\s*\((.*)\)/i.exec(text);
             // console.log("match " + match);
             if (match !== null) {
                 // function has started
@@ -206,7 +206,7 @@ export class DeclarationProvider implements Disposable {
                 }
                 currentFunction = new BrightScriptDeclaration(
                     match[1].trim(),
-                    SymbolKind.Function,
+                    match[1].trim().toLowerCase() === 'new' ? SymbolKind.Constructor : SymbolKind.Function,
                     container,
                     match[2].split(','),
                     new Range(line, match[0].length - match[1].length - match[2].length - 2, line, match[0].length - 1),
@@ -236,6 +236,27 @@ export class DeclarationProvider implements Disposable {
             if (match !== null) {
                 // console.log("FOUND VAR " + match);
                 const name = match[1].trim();
+                if (mDefs[name] !== true) {
+                    mDefs[name] = true;
+                    let varSymbol = new BrightScriptDeclaration(
+                        name,
+                        SymbolKind.Field,
+                        container,
+                        undefined,
+                        new Range(line, match[0].length - match[1].length, line, match[0].length),
+                        new Range(line, 0, line, text.length),
+                    );
+                    console.log('FOUND VAR ' + varSymbol.name);
+                    symbols.push(varSymbol);
+                }
+                continue;
+            }
+
+            // //FIELD
+            match = /^(?!.*\()(?: |\t)*(public|private)(?: |\t)*(\w*).*((?: |\t)*=(?: |\t)*.*)*$/i.exec(text);
+            if (match !== null) {
+                // console.log("FOUND VAR " + match);
+                const name = match[2].trim();
                 if (mDefs[name] !== true) {
                     mDefs[name] = true;
                     let varSymbol = new BrightScriptDeclaration(

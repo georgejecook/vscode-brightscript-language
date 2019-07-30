@@ -93,8 +93,11 @@
     "main": "./out/extension",
     "activationEvents": [
         "onDebug",
+        "onLanguage:brighterscript",
         "onLanguage:brightscript",
         "onLanguage:xml",
+        "onCommand:extension.brightscript.toggleXML",
+        "onCommand:extension.brightscript.toggleBuiltFile",
         "onCommand:extension.brightscript.sendRemoteCommand",
         "onCommand:extension.brightscript.pressBackButton",
         "onCommand:extension.brightscript.pressHomeButton",
@@ -113,6 +116,9 @@
         "breakpoints": [
             {
                 "language": "brightscript"
+            },
+            {
+                "language": "brighterscript"
             }
         ],
         "debuggers": [
@@ -380,13 +386,22 @@
             {
                 "id": "brightscript",
                 "extensions": [
-                    ".brs",
-                    ".bs"
+                    ".brs"
                 ],
                 "aliases": [
                     "BrightScript"
                 ],
                 "configuration": "./language-configuration.json"
+            },
+            {
+                "id": "brighterscript",
+                "extensions": [
+                    ".bs"
+                ],
+                "aliases": [
+                    "BrighterScript"
+                ],
+                "configuration": "./brighterscript-language-configuration.json"
             },
             {
                 "id": "Log",
@@ -411,9 +426,18 @@
                 "language": "brightscript",
                 "scopeName": "source.brs",
                 "path": "./syntaxes/brightscript.tmLanguage.json"
+            },
+            {
+                "language": "brighterscript",
+                "scopeName": "source.bs",
+                "path": "./syntaxes/brighterscript.tmLanguage.json"
             }
         ],
         "snippets": [
+            {
+                "language": "brighterscript",
+                "path": "./snippets.json"
+            },
             {
                 "language": "brightscript",
                 "path": "./snippets.json"
@@ -555,6 +579,11 @@
             {
                 "command": "extension.brightscript.toggleXML",
                 "title": "Toggle xml/brs",
+                "category": "Brightscript"
+            },
+            {
+                "command": "extension.brightscript.toggleBuiltFile",
+                "title": "Toggle between source file, and the file that was copied to your roku",
                 "category": "Brightscript"
             },
             {
