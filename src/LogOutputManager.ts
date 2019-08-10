@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 
 import { DiagnosticCollection } from 'vscode';
@@ -246,9 +247,9 @@ export class LogOutputManager {
             if (match) {
                 let pkgPath = match[1];
                 const lineNumber = Number(match[2]);
-                pkgPath = this.docLinkProvider.getLikelyPkgPath(pkgPath);
+                // pkgPath = this.docLinkProvider.convertPkgPathToFsPath(pkgPath);
                 const filename = this.getFilename(pkgPath);
-                const extension = pkgPath.substring(pkgPath.length - 4);
+                const extension = path.extname(pkgPath);
                 let customText = this.getCustomLogText(pkgPath, filename, extension, Number(lineNumber), logLineNumber);
                 //TODO match the pkgPath against srcDirs and brighterscript files
                 const customLink = new CustomDocumentLink(logLineNumber, match.index, customText.length, pkgPath, lineNumber, filename);

@@ -1,3 +1,4 @@
+import * as fsExtra from 'fs-extra';
 import * as path from 'path';
 import * as rokuDeploy from 'roku-deploy';
 import { DocumentLink, Position, Range } from 'vscode';
@@ -81,47 +82,68 @@ export class LogDocumentLinkProvider implements vscode.DocumentLinkProvider {
     }
 
     public addCustomLink(customLink: CustomDocumentLink) {
-        let match: RegExpExecArray;
-
-        let fileMap = this.getFileMap(customLink.pkgPath);
-        if (fileMap) {
-            let uri = vscode.Uri.file(fileMap.src);
-            if (customLink.lineNumber) {
-                uri = uri.with({ fragment: customLink.lineNumber.toString().trim() });
+        for (let i = 0; i < 2; i++) {
+            let fileMap = this.getFileMap(customLink.pkgPath);
+            if (fileMap) {
+                let uri = vscode.Uri.file(fileMap.src);
+                if (customLink.lineNumber) {
+                    uri = uri.with({ fragment: customLink.lineNumber.toString().trim() });
+                }
+                let range = new Range(new Position(customLink.outputLine, customLink.startChar), new Position(customLink.outputLine, customLink.startChar + customLink.length));
+                this.customLinks.push(new DocumentLink(range, uri));
+                return;
             }
-            let range = new Range(new Position(customLink.outputLine, customLink.startChar), new Position(customLink.outputLine, customLink.startChar + customLink.length));
-            this.customLinks.push(new DocumentLink(range, uri));
-        } else {
-            console.log('could not find matching file for link with path ' + customLink.pkgPath);
+            customLink.pkgPath = fileUtils.getAlternateBrsFileName(customLink.pkgPath);
         }
+        console.log('could not find matching file for link with path ' + customLink.pkgPath);
     }
 
     public resetCustomLinks() {
         this.customLinks = [];
     }
 
-    public convertPkgPathToFsPath(pkgPath: string): string | null {
+        /*
+        georgejecook: would love to know a way to do this without the exists
+        I think we need to standardize the functionality here, into a general purpose utility method
+        which will help with rss support later, as well.
+        */
+    public convertPkgPathToFsPath(pkgPath: string) {
         //remove preceeding pkg:
         if (pkgPath.toLowerCase().indexOf('pkg:') === 0) {
             pkgPath = pkgPath.substring(4);
         }
-        let file = this.getFileMap(pkgPath);
 
-        if (file) {
-            return file.src;
-        }
-        return null;
-    }
-
-    public getLikelyPkgPath(pkgPath: string): string | null {
-        if (!this.getFileMap(pkgPath) && pkgPath.toLowerCase().endsWith('.brs')) {
-            let bsPkgPath = fileUtils.getBsFileName(pkgPath);
-            if (this.getFileMap(bsPkgPath)) {
-                return bsPkgPath;
+        //use debugRootDir if provided, or rootDir if not provided.
+        let rootDir = this.launchConfig.rootDir;
+        for (let i = 0; i < 2; i++) {
+            if (this.launchConfig.debugRootDir) {
+                rootDir = this.launchConfig.debugRootDir;
+                let clientPath = path.normalize(path.join(rootDir, pkgPath));
+                if (fsExtra.existsSync(clientPath)) {
+                    return clientPath;
+                }
             }
-        }
 
+            if (this.launchConfig.sourceDirs) {
+                if (this.launchConfig.sourceDirs.length === 1) {
+                //best case, simply choose the first item
+                    rootDir = this.launchConfig.sourceDirs[0];
+                    let clientPath = path.normalize(path.join(rootDir, pkgPath));
+                    if (fsExtra.existsSync(clientPath)) {
+                        return clientPath;
+                    }
+
+                } else {
+                    for (let sourceDir of this.launchConfig.sourceDirs) {
+                        let clientPath = path.normalize(path.join(sourceDir, pkgPath));
+                        if (fsExtra.existsSync(clientPath)) {
+                            return clientPath;
+                        }
+                    }
+                }
+            }
+            pkgPath = fileUtils.getAlternateBrsFileName(pkgPath);
+        }
         return pkgPath;
     }
-
 }
