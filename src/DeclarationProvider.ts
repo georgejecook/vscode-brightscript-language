@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import * as iconv from 'iconv-lite';
 import * as vscode from 'vscode';
-
 import {
     Disposable,
     Event,
@@ -89,6 +88,8 @@ export class DeclarationProvider implements Disposable {
     private fullscan: boolean = true;
 
     private dirty: Map<string, Uri> = new Map();
+    private fileNamespaces = new Map<Uri, Set<string>>();
+    private allNamespaces = new Set<string>();
 
     private syncing: Promise<void>;
     private encoding: WorkspaceEncoding = new WorkspaceEncoding();
@@ -190,6 +191,9 @@ export class DeclarationProvider implements Disposable {
         let funcEndChar: number;
         let mDefs = {};
         console.log('READ DECLARATIONS');
+        let oldNamespaces = this.fileNamespaces.get(uri);
+        this.fileNamespaces.delete(uri);
+        let namespaces = new Set<string>();
 
         for (const [line, text] of iterlines(input)) {
             // console.log("" + line + ": " + text);
@@ -271,6 +275,25 @@ export class DeclarationProvider implements Disposable {
                     symbols.push(varSymbol);
                 }
                 continue;
+            }
+
+            //namespace declaration
+            match = /^(?: |\t)*namespace(?: |\t)*(\w*).*$/i.exec(text);
+            if (match !== null) {
+                const name = match[1].trim();
+                if (name) {
+                    let namespaceSymbol = new BrightScriptDeclaration(
+                        name,
+                        SymbolKind.Namespace,
+                        container,
+                        undefined,
+                        new Range(line, match[0].length - match[1].length, line, match[0].length),
+                        new Range(line, 0, line, text.length),
+                    );
+                    console.log('FOUND NAMESPACES ' + namespaceSymbol.name);
+                    symbols.push(namespaceSymbol);
+                    namespaces.add(name.toLowerCase());
+                }
             }
         }
         this.cache.set(uri.fsPath, symbols);
