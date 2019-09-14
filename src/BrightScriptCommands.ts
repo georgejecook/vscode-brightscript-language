@@ -1,5 +1,6 @@
 import * as request from 'request';
 import * as vscode from 'vscode';
+import * as path from 'path';
 
 // tslint:disable-next-line
 export var __request: any = request;
@@ -140,23 +141,40 @@ export default class BrightScriptCommands {
         }
     }
 
-    public async onToggleBuiltFile() {
+    public async  onToggleBuiltFile() {
         if (vscode.window.activeTextEditor) {
+            const rootDir = vscode.workspace.rootPath;
             const currentDocument = vscode.window.activeTextEditor.document;
-            //TODO ascertain paths
-            let nextPath = null;
-            let fsPath = this.fileUtils.getBrsFileName(currentDocument.uri.fsPath) || currentDocument.uri.fsPath;
+            let relativeBuildPath = this.launchConfig.rootDir.replace('${workspaceFolder}', '');
+            relativeBuildPath = relativeBuildPath.replace(rootDir, '');
+            let fsPath = currentDocument.uri.fsPath;
+            let isOpened = false;
 
-            if (fsPath.startsWith(this.debugRootDir)) {
-                //TODO - work out how to get the common path to root + source folders
-                nextPath = fsPath.replace(this.debugRootDir, this.rootDir);
-            } else {
-                //TODO - work out how to get the common path to root + source folders
-                nextPath = fsPath.replace(this.rootDir, this.debugRootDir);
-            }
-            if (nextPath) {
-                if (!await this.openFile(nextPath, vscode.window.activeTextEditor.selection)) {
-                    this.openFile(this.fileUtils.getBsFileName(nextPath), vscode.window.activeTextEditor.selection);
+            for (let sourceDir of this.launchConfig.sourceDirs) {
+                let relativeSourceDir = sourceDir.replace('${workspaceFolder}', '');
+                relativeSourceDir = relativeSourceDir.replace(rootDir, '');
+                const relativeFsPath = fsPath.replace(rootDir, '');
+
+                let docPath = '';
+                if (relativeFsPath.startsWith(relativeSourceDir)) {
+                    //we are viewing a source path file, so we're going to show the built file
+                    //it MUST be a brs
+                    docPath = relativeFsPath.replace(relativeSourceDir, '');
+                    docPath = path.join(rootDir, relativeBuildPath, docPath);
+                    docPath = this.fileUtils.getBrsFileName(docPath);
+                    isOpened = await this.openFile(docPath, vscode.window.activeTextEditor.selection);
+
+                } else {
+                    // we are viewing the build file, so we're going to show the source file
+                    docPath = relativeFsPath.replace(relativeBuildPath, '');
+                    docPath = path.join(rootDir, relativeSourceDir, docPath);
+                    isOpened = await this.openFile(docPath, vscode.window.activeTextEditor.selection);
+                    if (!isOpened) {
+                        this.openFile(this.fileUtils.getAlternateBrsFileName(docPath), vscode.window.activeTextEditor.selection);
+                    }
+                }
+                if (isOpened) {
+                    break;
                 }
             }
         }
