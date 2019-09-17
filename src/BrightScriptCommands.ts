@@ -161,16 +161,22 @@ export default class BrightScriptCommands {
                     //it MUST be a brs
                     docPath = relativeFsPath.replace(relativeSourceDir, '');
                     docPath = path.join(rootDir, relativeBuildPath, docPath);
-                    docPath = this.fileUtils.getBrsFileName(docPath);
+                    if (!docPath.toLowerCase().endsWith('.xml')) {
+                        docPath = this.fileUtils.getBrsFileName(docPath);
+                    }
                     isOpened = await this.openFile(docPath, vscode.window.activeTextEditor.selection);
 
                 } else {
                     // we are viewing the build file, so we're going to show the source file
                     docPath = relativeFsPath.replace(relativeBuildPath, '');
                     docPath = path.join(rootDir, relativeSourceDir, docPath);
-                    isOpened = await this.openFile(docPath, vscode.window.activeTextEditor.selection);
-                    if (!isOpened) {
-                        this.openFile(this.fileUtils.getAlternateBrsFileName(docPath), vscode.window.activeTextEditor.selection);
+                    if (!docPath.toLowerCase().endsWith('.xml')) {
+                        isOpened = await this.openFile(docPath, vscode.window.activeTextEditor.selection);
+                        if (!isOpened) {
+                            this.openFile(this.fileUtils.getAlternateBrsFileName(docPath), vscode.window.activeTextEditor.selection);
+                        }
+                    } else {
+                        isOpened = await this.openFile(docPath, vscode.window.activeTextEditor.selection);
                     }
                 }
                 if (isOpened) {
