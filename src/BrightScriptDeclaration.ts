@@ -18,6 +18,7 @@ export class BrightScriptDeclaration {
         public bodyRange: Range,
         public uri?: Uri) {
     }
+    public parent: BrightScriptDeclaration | undefined;
 
     public static fromUri(uri: Uri) {
         let documentName = uri.path;

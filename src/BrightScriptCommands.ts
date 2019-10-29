@@ -1,6 +1,6 @@
+import * as path from 'path';
 import * as request from 'request';
 import * as vscode from 'vscode';
-import * as path from 'path';
 
 // tslint:disable-next-line
 export var __request: any = request;

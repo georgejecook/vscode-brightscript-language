@@ -13,5 +13,13 @@
     "editor.detectIndentation": false,
     "editor.tabSize": 4,
     "typescript.format.insertSpaceAfterFunctionKeywordForAnonymousFunctions": false,
-    "jira-plugin.workingProject": ""
+    "jira-plugin.workingProject": "",
+    "workbench.colorCustomizations": {
+        "statusBar.background": "#551A8B",
+        "statusBar.debuggingBackground": "#551A8B",
+        "panelTitle.activeBorder": "#ff0000",
+        "activityBar.background": "#02333E",
+        "titleBar.activeBackground": "#034757",
+        "titleBar.activeForeground": "#F2FCFF"
+    }
 }

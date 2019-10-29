@@ -832,7 +832,7 @@ export class BrightScriptDebugSession extends DebugSession {
                 };
             } else if (args.context === 'repl') {
                 //exclude any of the standard interaction commands so we don't screw up the IDE's debugger state
-                let excludedExpressions = ['cont', 'c', 'down', 'd', 'exit', 'over', 'o', 'out', 'step', 's', 't', 'thread', 'th', 'up', 'u'];
+                let excludedExpressions = [];
                 if (excludedExpressions.indexOf(args.expression.toLowerCase().trim()) > -1) {
                     this.sendEvent(new OutputEvent(`Expression '${args.expression}' not permitted when debugging in VSCode`, 'stdout'));
                 } else {

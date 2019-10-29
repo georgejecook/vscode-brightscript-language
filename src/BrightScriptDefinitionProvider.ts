@@ -17,7 +17,12 @@ export default class BrightScriptDefinitionProvider implements DefinitionProvide
     private repo: DefinitionRepository;
 
     public async provideDefinition(document: TextDocument, position: Position, token: CancellationToken): Promise<Definition> {
-        await this.repo.sync();
+        try {
+            await this.repo.sync();
+        } catch (e) {
+            console.error(e.message);
+        }
+
         return Array.from(this.repo.find(document, position));
     }
 

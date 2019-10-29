@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 
 import {
-  CancellationToken,
-  Location,
-  SymbolInformation, SymbolKind,
-  TextDocument,
-  Uri,
-  WorkspaceSymbolProvider
+    CancellationToken,
+    Location,
+    SymbolInformation, SymbolKind,
+    TextDocument,
+    Uri,
+    WorkspaceSymbolProvider
 } from 'vscode';
 
 import { DeclarationProvider } from './DeclarationProvider';
@@ -21,8 +21,14 @@ export class BrightScriptWorkspaceSymbolProvider implements WorkspaceSymbolProvi
     private declarationProvider: DeclarationProvider;
     private repo: SymbolInformationRepository;
 
-    public provideWorkspaceSymbols(query: string, token: CancellationToken): Promise<SymbolInformation[]> {
-        return this.repo.sync().then(() => Array.from(this.repo.find(query)));
+    public async provideWorkspaceSymbols(query: string, token: CancellationToken): Promise<SymbolInformation[]> {
+        try {
+
+            await this.repo.sync();
+        } catch (e) {
+            console.error(e.message);
+        }
+        return Array.from(this.repo.find(query));
     }
 }
 
