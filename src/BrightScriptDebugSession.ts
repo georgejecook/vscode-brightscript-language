@@ -516,7 +516,7 @@ export class BrightScriptDebugSession extends DebugSession {
      * @param componentLibrary The library to check
      * @param stagingFolder staging folder of the component library to search for the manifest file
      */
-    private async processComponentLibraryForAutoNaming(componentLibrary: {outFile: string}, stagingFolder: string) {
+    private async processComponentLibraryForAutoNaming(componentLibrary: { outFile: string }, stagingFolder: string) {
         let regexp = /\$\{([\w\d_]*)\}/;
         let renamingMatch;
         let manifestValues;
@@ -939,8 +939,12 @@ export class BrightScriptDebugSession extends DebugSession {
         for (const sourceDir of rootDir) {
             let clientPath = path.normalize(path.join(sourceDir, debuggerPath));
             lastExistingPath = this.getBsCompatibleSourcePath(clientPath);
+
+            if (lastExistingPath !== '') {
+                return lastExistingPath;
+            }
         }
-        return lastExistingPath;
+        return '';
     }
     private getBsCompatibleSourcePath(clientPath: string): string {
         if (fsExtra.pathExistsSync(clientPath)) {
@@ -950,9 +954,8 @@ export class BrightScriptDebugSession extends DebugSession {
             if (fsExtra.pathExistsSync(bsClientPath)) {
                 return bsClientPath;
             }
-        } else {
-            return '';
         }
+        return '';
     }
 
     private removeFileTruncation(filePath) {
@@ -1168,7 +1171,7 @@ export class BrightScriptDebugSession extends DebugSession {
 
                     // Replace the found line with the new line containing the tracker task code
                     fileContents = fileContents.replace(line, newLine);
-                    index ++;
+                    index++;
                 }
 
                 // safe the changes back to the staging file
