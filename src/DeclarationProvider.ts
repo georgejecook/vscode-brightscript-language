@@ -295,7 +295,7 @@ export class DeclarationProvider implements Disposable {
             // }
 
             // //FIELD
-            match = /^(?!.*\()(?: |\t)*(public|private)(?: |\t)*(\w*).*((?: |\t)*=(?: |\t)*.*)*$/i.exec(text);
+            match = /^(?!.*\()(?: |\t)*(public|private)(?: |\t)*([a-z|\.|_]*).*((?: |\t)*=(?: |\t)*.*)*$/i.exec(text);
             if (match !== null) {
                 // console.log("FOUND VAR " + match);
                 const name = match[2].trim();
@@ -322,7 +322,7 @@ export class DeclarationProvider implements Disposable {
             }
 
             //start namespace declaration
-            match = /^(?: |\t)*namespace(?: |\t)*(\w*).*$/i.exec(text);
+            match = /^(?: |\t)*namespace(?: |\t)*([a-z|\.|_]*).*$/i.exec(text);
             if (match !== null) {
                 const name = match[1].trim();
                 if (name) {
