@@ -227,7 +227,7 @@ export class DeclarationProvider implements Disposable {
             funcEndChar = text.length;
 
             //FUNCTION START
-            let match = /^\s*(?:override)*\s*(?:public|private)*\s*(?:function|sub)\s+(.*[^\(])\s*\((.*)\)/i.exec(text);
+            let match = /^\s*(?:override|public|private|protected)*\s*(?:override|protected|public|private)*\s*(?:function|sub)\s+(.*[^\(])\s*\((.*)\)/i.exec(text);
             // console.log("match " + match);
             if (match !== null) {
                 // function has started
